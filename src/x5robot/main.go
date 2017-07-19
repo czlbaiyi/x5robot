@@ -3,22 +3,19 @@ package main
 import (
 	"fmt"
 	"x5robot/x5base"
-	"unsafe"
+	"x5robot/event"
 )
 
-func main(){
-	fmt.Println("Hello World!");
+func main() {
+	fmt.Println("Hello World!")
 
-	netMessage := &x5base.NetMessage{}
-	netMessage.CLSID = 151
-	netMessage.Serial = 100
-	netMessage.SeqOrAck = 0
-	allbyte := netMessage.Serialize()
+	versionReq := &event.CEventVersionRequest{}
+	versionReq.CLSID = 151
+	versionReq.Serial = 100
+	versionReq.SeqOrAck = 0
+	allbyte := x5base.Serialize(versionReq)
 	fmt.Println(allbyte)
-	
-	a := x5base.GetCRC32([]byte{'1'})
-	_ = a
 
-	i := int(1)
-	fmt.Println(unsafe.Sizeof(i)) // 4	
+	a := x5base.GetCRC32([]byte{'1'})
+	fmt.Println(a)
 }
