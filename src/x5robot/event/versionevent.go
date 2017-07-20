@@ -31,8 +31,7 @@ type MobileClientInfo struct {
 
 // CEventVersionRequest ...
 type CEventVersionRequest struct {
-	DefaultServerID int32            `x5tag:"default_server_id"`
-	ClientInfo      MobileClientInfo `x5tag:"client_info"`
-	ClientInfoTemp *MobileClientInfo `x5tag:"xxxxxxxxxx"`
-	x5base.CEventMobileRequest		`x5tag:"inherit"`
+	DefaultServerID            int32             `x5tag:"default_server_id"`
+	ClientInfo                 MobileClientInfo  `x5tag:"client_info"`
+	x5base.CEventMobileRequest `x5tag:"inherit"`
 }

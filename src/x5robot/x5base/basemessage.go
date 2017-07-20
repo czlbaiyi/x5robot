@@ -2,12 +2,12 @@ package x5base
 
 //////////////////CEventMobileReqRepBase//////////////////
 type CEventMobileReqRepBase struct {
-	NetMessage
+	NetMessage `x5tag:"inherit"`
 }
 
 //////////////////CEventMobileRequest//////////////////
 type CEventMobileRequest struct {
-	CEventMobileReqRepBase
+	CEventMobileReqRepBase `x5tag:"inherit"`
 }
 
 func (r *CEventMobileRequest) IsSilent() bool {
@@ -16,7 +16,7 @@ func (r *CEventMobileRequest) IsSilent() bool {
 
 //////////////////CEventIngame//////////////////
 type CEventIngame struct {
-	NetMessage
+	NetMessage `x5tag:"inherit"`
 }
 
 func (r *CEventIngame) IsSilent() bool {
@@ -29,5 +29,5 @@ func (r *CEventIngame) IsNeedResend() bool {
 
 //////////////////ServerPushMessage//////////////////
 type ServerPushMessage struct {
-	NetMessage
+	NetMessage `x5tag:"inherit"`
 }
