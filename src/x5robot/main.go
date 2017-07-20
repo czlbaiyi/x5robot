@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"x5robot/x5base"
 	"x5robot/event"
+	"reflect"
 )
 
 func main() {
@@ -29,6 +30,24 @@ func main() {
 	versionReq.ClientInfo.NetInfo = "WIFI"
 	versionReq.ClientInfo.OpenID = "13093805"
 	versionReq.ClientInfo.OpenKey = ""
+
+	v1 := reflect.ValueOf(versionReq)
+	fmt.Println("v1 ",v1)
+	v2 := v1.Interface()
+	fmt.Println("v2 ",v2)
+	v3 := reflect.ValueOf(v2)
+	fmt.Println("v3 ",v3)
+	if v3.Kind() == reflect.Ptr {
+		v3 = v3.Elem()
+	}
+	fmt.Println("v3 ",v3)
+	v4 := v3.Interface()
+	fmt.Println("v4 ",v4)
+
+	v5 := reflect.TypeOf(v4)
+	for i := 0; i < v5.NumField(); i++ {
+		fmt.Println(v5.Field(i).Tag)
+	}
 
 	allbyte := x5base.Serialize(versionReq)
 	fmt.Println(allbyte)

@@ -124,59 +124,56 @@ func get_value_type(ft reflect.Kind) int32 {
 	}
 }
 
-func encode_value_to_buf(idx int32, v reflect.Value, allBuffs *bytes.Buffer) {
-	if !v.CanInterface() {
-		v = v.Elem()
-	}
+func encode_value_to_buf(idx int32, v interface{}, allBuffs *bytes.Buffer) {
+	fmt.Print("encode_value_to_buf:",v)
 
-	t := get_value_type(v.Kind())
+	vt := reflect.TypeOf(v)
+	t := get_value_type(vt.Kind())
 	wt := get_wire_type(t)
 
-	fmt.Print(v.Kind(), "v.Interface():" ,v.Interface())
-
-	switch v.Kind() {
+	switch vt.Kind() {
 	case reflect.Bool:
-		va := v.Interface().(bool)
+		va := v.(bool)
 		if va {
 			save_protobuf_int32(idx, 1, allBuffs, wt)
 		} else {
 			save_protobuf_int32(idx, 0, allBuffs, wt)
 		}
 	case reflect.Int8:
-		va := int32(v.Interface().(int8))
+		va := int32(v.(int8))
 		save_protobuf_int32(idx, va, allBuffs, wt)
 	case reflect.Int16:
-		va := int32(v.Interface().(int16))
+		va := int32(v.(int16))
 		save_protobuf_int32(idx, va, allBuffs, wt)
 	case reflect.Int32:
-		va := v.Interface().(int32)
+		va := v.(int32)
 		save_protobuf_int32(idx, va, allBuffs, wt)
 	case reflect.Int64:
-		va := v.Interface().(int64)
+		va := v.(int64)
 		save_protobuf_int64(idx, va, allBuffs, wt)
 	case reflect.Uint8:
-		va := uint32(v.Interface().(uint8))
+		va := uint32(v.(uint8))
 		save_protobuf_uint32(idx, va, allBuffs, wt)
 	case reflect.Uint16:
-		va := uint32(v.Interface().(uint16))
+		va := uint32(v.(uint16))
 		save_protobuf_uint32(idx, va, allBuffs, wt)
 	case reflect.Uint32:
-		va := v.Interface().(uint32)
+		va := v.(uint32)
 		save_protobuf_uint32(idx, va, allBuffs, wt)
 	case reflect.Uint64:
-		va := v.Interface().(uint64)
+		va := v.(uint64)
 		save_protobuf_uint64(idx, va, allBuffs, wt)
 	case reflect.Float32:
-		va := v.Interface().(float32)
+		va := v.(float32)
 		save_protobuf_float32(idx, va, allBuffs)
 	case reflect.Float64:
-		va := v.Interface().(float64)
+		va := v.(float64)
 		save_protobuf_float64(idx, va, allBuffs)
 	case reflect.String:
-		va := v.Interface().(string)
+		va := v.(string)
 		save_protobuf_string(idx, []byte(va), allBuffs)
 	case reflect.Struct:
-		save_protobuf_struct(idx,v.Interface(),allBuffs)
+		save_protobuf_struct(idx,v,allBuffs)
 	default:
 		panic("不支持的数据类型")
 	}
@@ -332,43 +329,45 @@ func save_protobuf_string(idx int32, va []byte, allBuffs *bytes.Buffer) {
 	fmt.Println(allBuffs.Bytes())
 }
 
-func save_protobuf_struct(idx int32, va interface{}, allBuffs *bytes.Buffer) {
+func save_protobuf_struct(idx int32, v interface{}, allBuffs *bytes.Buffer) {
 	newBuff := bytes.NewBuffer([]byte{})
-	encode_struct_to_buf(va,newBuff)
+	encode_struct_to_buf(v,newBuff)
 	save_protobuf_lenth_delimited(idx,newBuff.Bytes(),allBuffs)
 }
 
-func encode_struct_to_buf(va interface{}, allBuffs *bytes.Buffer) {
-	t := reflect.TypeOf(va)
-	v := reflect.ValueOf(va)
+func encode_struct_to_buf(v interface{}, allBuffs *bytes.Buffer) {
+	rt := reflect.TypeOf(v)
+	rv := reflect.ValueOf(v)
 	
 	// 如果是指针，则获取其所指向的元素
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-		v = v.Elem()
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+		rv = rv.Elem()
 	}
 	// 进一步获取 i 的方法信息
-	for i := 0; i < t.NumField(); i++ {
-		tag := t.Field(i).Tag.Get("x5tag")
+	for i := 0; i < rt.NumField(); i++ {
+		tf := rt.Field(i)
+		fmt.Println("tag:","i = ",tf.Tag)
+		tag := tf.Tag.Get("x5tag")
 		if tag != "" {
 			fmt.Println(tag)
-			tempT := t.Field(i).Type
-			tempV := v.Field(i)
-			fmt.Print("tempT name:",t.Field(i).Name)
-			if tempT.Kind() == reflect.Ptr {
-				tempT = tempT.Elem()
-				tempV = tempV.Elem()
+			tft := tf.Type
+			vf := rv.Field(i)
+			fmt.Println("tft name:",tf.Name)
+			if tft.Kind() == reflect.Ptr {
+				tft = tft.Elem()
+				vf = vf.Elem()
 			}
-			fmt.Print("tempT name:",tempT.Name)
+			fmt.Println("tft name:",tft.Name)
 
 			if tag == "inherit" {
-				if i != t.NumField()-1 {
+				if i != rt.NumField()-1 {
 					panic("被继承的类必须是放在最后一个，此条仅限于x5tag的协议标记")
 				}
 				binary.Write(allBuffs, binary.LittleEndian, InheritFlag)
-				encode_struct_to_buf(tempV, allBuffs)
+				encode_struct_to_buf(vf.Interface(), allBuffs)
 			} else {
-				encode_value_to_buf(int32(i+1), tempV, allBuffs)
+				encode_value_to_buf(int32(i+1), vf.Interface(), allBuffs)
 			}
 
 			fmt.Println("allBuffs:", allBuffs.Bytes())
