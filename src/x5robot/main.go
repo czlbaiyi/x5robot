@@ -46,6 +46,6 @@ func main() {
 	versionReq.ClientInfo.OpenID = "13093805"
 	versionReq.ClientInfo.OpenKey = ""
 
-	allbyte := x5base.Serialize(versionReq)
+	allbyte := x5base.GenSendPacket(versionReq)
 	fmt.Println(allbyte)
 }

@@ -38,7 +38,7 @@ const (
 	PT_Data64                = 3
 )
 
-func Serialize(netMsg interface{}) []byte {
+func serialize(netMsg interface{}) []byte {
 	allBuffs := bytes.NewBuffer([]byte{})
 
 	fmt.Println("---------------------")
