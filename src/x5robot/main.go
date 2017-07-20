@@ -4,18 +4,33 @@ import (
 	"fmt"
 	"x5robot/x5base"
 	"x5robot/event"
-	"reflect"
+	"bytes"
+	"encoding/binary"
 )
 
 func main() {
 	fmt.Println("Hello World!")
 
+	var a int32 = 1
+	b := []byte{}
+	c := bytes.NewBuffer([]byte{})
+	e := binary.Write(c, binary.LittleEndian, []byte("xxxxxxxxxxx") )
+	fmt.Println(e)
+	binary.Write(c, binary.LittleEndian, &a) 
+	fmt.Println(e)
+	fmt.Println(c)
+	b = c.Bytes()
+	d := x5base.GetCRC32(&b,0,4)
+	f := uint32(d)
+	fmt.Println(f)
+
 	versionReq := &event.CEventVersionRequest{}
 	versionReq.CLSID = 151
 	versionReq.Serial = 100
 	versionReq.SeqOrAck = 0
-	versionReq.DefaultServerID = 1
+	versionReq.DefaultServerID = -1
 	versionReq.ClientInfo.CarrierType = 0
+	versionReq.ClientInfo.UnityLogin = 1
 	versionReq.ClientInfo.ClientMemorySize = 16322
 	versionReq.ClientInfo.ClientPlatform = 1
 	versionReq.ClientInfo.ClientResVersion = "0.1"
@@ -31,27 +46,6 @@ func main() {
 	versionReq.ClientInfo.OpenID = "13093805"
 	versionReq.ClientInfo.OpenKey = ""
 
-	v1 := reflect.ValueOf(versionReq)
-	fmt.Println("v1 ",v1)
-	v2 := v1.Interface()
-	fmt.Println("v2 ",v2)
-	v3 := reflect.ValueOf(v2)
-	fmt.Println("v3 ",v3)
-	if v3.Kind() == reflect.Ptr {
-		v3 = v3.Elem()
-	}
-	fmt.Println("v3 ",v3)
-	v4 := v3.Interface()
-	fmt.Println("v4 ",v4)
-
-	v5 := reflect.TypeOf(v4)
-	for i := 0; i < v5.NumField(); i++ {
-		fmt.Println(v5.Field(i).Tag)
-	}
-
 	allbyte := x5base.Serialize(versionReq)
 	fmt.Println(allbyte)
-
-	a := x5base.GetCRC32([]byte{'1'})
-	fmt.Println(a)
 }

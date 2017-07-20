@@ -21,7 +21,7 @@ type MobileClientInfo struct {
 	ClinetStorageFree     int64  `x5tag:"clinet_storage_free"`
 	ClientResVersion      string `x5tag:"client_res_version"`
 	CarrierType           int32  `x5tag:"carrier_type"`
-	UnityLogin            int32  `x5tag:"unity_login"`
+	UnityLogin            int32  `x5tag:"unity_login"` // 0,非unity登陆  //1. unity登陆
 	RegChannelID          string `x5tag:"reg_channel_id"`
 	WakeupSourcePrivilege int32  `x5tag:"wakeup_source_privilege"`
 	Pfkey                 string `x5tag:"pfkey"`

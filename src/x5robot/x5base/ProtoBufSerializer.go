@@ -67,9 +67,29 @@ func Serialize(netMsg interface{}) []byte {
 	SeqOrAck := v.FieldByName("SeqOrAck")
 	binary.Write(allBuffs, binary.LittleEndian, SeqOrAck.Interface())
 
+	// 序列化x5tag数据
 	newBufs := bytes.NewBuffer([]byte{})
+	save_protobuf_struct(-1, netMsg, newBufs)
+	buffs := newBufs.Bytes()
+	fmt.Println("buffs :", buffs)
+	// 加密
+	key := uint32(Serial.Interface().(int32))
+	Encrypt(key, &buffs)
 
-	save_protobuf_struct(-1,netMsg, newBufs)
+	//安全码
+	var security_flag uint32 = 0xacabdeaf
+	binary.Write(allBuffs, binary.LittleEndian, &security_flag)
+
+	//求和
+	checksum := GetCRC32(&buffs, 0, len(buffs))
+	binary.Write(allBuffs, binary.LittleEndian, &checksum)
+
+	//写入序列化数据长度
+	len := int32(len(buffs))
+	binary.Write(allBuffs, binary.LittleEndian, &len)
+
+	//写入写入序列化数据
+	binary.Write(allBuffs, binary.LittleEndian, &buffs)
 
 	return allBuffs.Bytes()
 }
@@ -125,7 +145,7 @@ func get_value_type(ft reflect.Kind) int32 {
 }
 
 func encode_value_to_buf(idx int32, v interface{}, allBuffs *bytes.Buffer) {
-	fmt.Print("encode_value_to_buf:",v)
+	fmt.Print("encode_value_to_buf:", v)
 
 	vt := reflect.TypeOf(v)
 	t := get_value_type(vt.Kind())
@@ -173,7 +193,7 @@ func encode_value_to_buf(idx int32, v interface{}, allBuffs *bytes.Buffer) {
 		va := v.(string)
 		save_protobuf_string(idx, []byte(va), allBuffs)
 	case reflect.Struct:
-		save_protobuf_struct(idx,v,allBuffs)
+		save_protobuf_struct(idx, v, allBuffs)
 	default:
 		panic("不支持的数据类型")
 	}
@@ -245,28 +265,28 @@ func from_var_uint64(allBuffs *bytes.Buffer) uint64 {
 
 func save_field_desc(idx int32, wt int32, allBuffs *bytes.Buffer) {
 	if idx != -1 {
-		desc := make_field_desc(idx,wt)
+		desc := make_field_desc(idx, wt)
 		binary.Write(allBuffs, binary.LittleEndian, &desc)
 	}
 }
 
- func save_protobuf_lenth_delimited(idx int32, buff []byte, allBuffs *bytes.Buffer) {
-		save_field_desc(idx, PT_LengthDelimited, allBuffs);
-		len := int32(len(buff))
-		binary.Write(allBuffs, binary.LittleEndian, &len)
-		binary.Write(allBuffs, binary.LittleEndian, &buff)
-	}
-
-func parse_field_index(desc uint16) int32{
-		return int32(desc >> 3)
+func save_protobuf_lenth_delimited(idx int32, buff []byte, allBuffs *bytes.Buffer) {
+	save_field_desc(idx, PT_LengthDelimited, allBuffs)
+	len := int32(len(buff))
+	binary.Write(allBuffs, binary.LittleEndian, &len)
+	binary.Write(allBuffs, binary.LittleEndian, &buff)
 }
-	
-func make_field_desc(idx int32, wt int32 ) uint16{
+
+func parse_field_index(desc uint16) int32 {
+	return int32(desc >> 3)
+}
+
+func make_field_desc(idx int32, wt int32) uint16 {
 	desc := (uint16)(((idx << 3) | wt))
 	return desc
 }
 
-func parse_wire_type(wt int16) int32{
+func parse_wire_type(wt int16) int32 {
 	return int32(wt & 0x0007)
 }
 
@@ -325,20 +345,20 @@ func save_protobuf_string(idx int32, va []byte, allBuffs *bytes.Buffer) {
 	binary.Write(newBuff, binary.LittleEndian, &va)
 	var eos byte = 0
 	binary.Write(newBuff, binary.LittleEndian, &eos)
-	save_protobuf_lenth_delimited(idx,newBuff.Bytes(),allBuffs)
+	save_protobuf_lenth_delimited(idx, newBuff.Bytes(), allBuffs)
 	fmt.Println(allBuffs.Bytes())
 }
 
 func save_protobuf_struct(idx int32, v interface{}, allBuffs *bytes.Buffer) {
 	newBuff := bytes.NewBuffer([]byte{})
-	encode_struct_to_buf(v,newBuff)
-	save_protobuf_lenth_delimited(idx,newBuff.Bytes(),allBuffs)
+	encode_struct_to_buf(v, newBuff)
+	save_protobuf_lenth_delimited(idx, newBuff.Bytes(), allBuffs)
 }
 
 func encode_struct_to_buf(v interface{}, allBuffs *bytes.Buffer) {
 	rt := reflect.TypeOf(v)
 	rv := reflect.ValueOf(v)
-	
+
 	// 如果是指针，则获取其所指向的元素
 	if rt.Kind() == reflect.Ptr {
 		rt = rt.Elem()
@@ -347,18 +367,18 @@ func encode_struct_to_buf(v interface{}, allBuffs *bytes.Buffer) {
 	// 进一步获取 i 的方法信息
 	for i := 0; i < rt.NumField(); i++ {
 		tf := rt.Field(i)
-		fmt.Println("tag:","i = ",tf.Tag)
+		fmt.Println("tag:", "i = ", tf.Tag)
 		tag := tf.Tag.Get("x5tag")
 		if tag != "" {
 			fmt.Println(tag)
 			tft := tf.Type
 			vf := rv.Field(i)
-			fmt.Println("tft name:",tf.Name)
+			fmt.Println("tft name:", tf.Name)
 			if tft.Kind() == reflect.Ptr {
 				tft = tft.Elem()
 				vf = vf.Elem()
 			}
-			fmt.Println("tft name:",tft.Name)
+			fmt.Println("tft name:", tft.Name)
 
 			if tag == "inherit" {
 				if i != rt.NumField()-1 {
@@ -372,5 +392,36 @@ func encode_struct_to_buf(v interface{}, allBuffs *bytes.Buffer) {
 
 			fmt.Println("allBuffs:", allBuffs.Bytes())
 		}
+	}
+}
+
+func Encrypt(key uint32, buf *[]byte) {
+	length := len(*buf)
+	for offset := 0; offset < length; offset += 4 {
+		// fmt.Println("a", (*buf)[offset+0])
+		// fmt.Println("a",(*buf)[offset+1])
+		// fmt.Println("a",(*buf)[offset+2])
+		// fmt.Println("a",(*buf)[offset+3])
+		(*buf)[offset+0] ^= (byte)(key)
+		(*buf)[offset+1] ^= (byte)(key >> 8)
+		(*buf)[offset+2] ^= (byte)(key >> 16)
+		(*buf)[offset+3] ^= (byte)(key >> 24)
+		// fmt.Println("b",(*buf)[offset+0])
+		// fmt.Println("b",(*buf)[offset+1])
+		// fmt.Println("b",(*buf)[offset+2])
+		// fmt.Println("b",(*buf)[offset+3])
+		key = uint32(GetCRC32(buf, offset, 4))
+	}
+}
+
+func Decrypt(key uint32, buf *[]byte) {
+	length := len(*buf)
+	for offset := 0; offset < length; offset += 4 {
+		newkey := uint32(GetCRC32(buf, offset, 4))
+		(*buf)[offset+0] ^= (byte)(key)
+		(*buf)[offset+1] ^= (byte)(key >> 8)
+		(*buf)[offset+2] ^= (byte)(key >> 16)
+		(*buf)[offset+3] ^= (byte)(key >> 24)
+		key = newkey
 	}
 }

@@ -36,25 +36,14 @@ var crcTable = []uint32{
 }
 
 // GetCRC32 ...
-func GetCRC32(buffs []byte) int32 {
-	return GetCRC32_1(buffs, len(buffs))
-}
-
-// GetCRC32_1 ...
-func GetCRC32_1(buffs []byte, length int) int32 {
-	var c uint32
+// 从buffs的offset偏移量开始,加密lenth长度
+func GetCRC32(buffs *[]byte, offset int, length int) int32 {
 	var crc uint32 = 0xFFFFFFFF
-
-	if buffs == nil || length == 0 {
-		c = 0xFFFFFFFF
-	} else {
-		c = crc
-		for i := 0; i < length; i++ {
-			tempb := byte(int(c)^int(buffs[i])) & 0xff
-			tempc := c >> 8
-			c = crcTable[tempb] ^ tempc
-		}
+	for i := 0; i < length; i++ {
+		crc = ((crc >> 8) & 0x00FFFFFF) ^ crcTable[(crc^uint32((*buffs)[offset+i]))&0xFF]
 	}
-	ret := c ^ 0xFFFFFFFF
-	return int32(ret)
+	temp := crc ^ 0xFFFFFFFF
+	t := int32(temp)
+	return (t)
+
 }
