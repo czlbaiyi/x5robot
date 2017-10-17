@@ -45,6 +45,7 @@ func main() {
 	versionReq.ClientInfo.NetInfo = "WIFI"
 	versionReq.ClientInfo.OpenID = "13093805"
 	versionReq.ClientInfo.OpenKey = ""
+	versionReq.DefaultServerIDList = []int32{0,1,2}
 
 	allbyte := x5base.GenSendPacket(versionReq)
 	fmt.Println(allbyte)

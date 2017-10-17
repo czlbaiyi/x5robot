@@ -15,9 +15,9 @@ type NetPacket struct {
 	BodyBuffer []byte `x5tag:"bodyBuffer"`
 }
 
-func GenSendPacket(netMsg interface{}) *NetPacket{
+func GenSendPacket(netMsg interface{}) *NetPacket {
 	allbyte := serialize(netMsg)
-	
+
 	packet := &NetPacket{}
 	packet.BodyLength = int32(len(allbyte))
 	packet.BodyBuffer = allbyte
@@ -26,7 +26,7 @@ func GenSendPacket(netMsg interface{}) *NetPacket{
 	lenBuf := bytes.NewBuffer([]byte{})
 	binary.Write(lenBuf, binary.LittleEndian, &packet.BodyLength)
 	packet.HeadBuffer = lenBuf.Bytes()
-	
+
 	return packet
 }
 

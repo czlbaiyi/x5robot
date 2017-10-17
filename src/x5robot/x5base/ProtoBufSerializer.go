@@ -192,6 +192,8 @@ func encode_value_to_buf(idx int32, v interface{}, allBuffs *bytes.Buffer) {
 	case reflect.String:
 		va := v.(string)
 		save_protobuf_string(idx, []byte(va), allBuffs)
+	case reflect.Slice:
+		save_protobuf_slice(idx, v, allBuffs)
 	case reflect.Struct:
 		save_protobuf_struct(idx, v, allBuffs)
 	default:
@@ -290,6 +292,13 @@ func parse_wire_type(wt int16) int32 {
 	return int32(wt & 0x0007)
 }
 
+func save_type(rk reflect.Kind, allBuffs *bytes.Buffer) {
+	vt := get_value_type(rk)
+	wt := get_wire_type(vt)
+	w := byte(wt)
+	binary.Write(allBuffs, binary.LittleEndian, &w)
+}
+
 func save_protobuf_int32(idx int32, va int32, allBuffs *bytes.Buffer, wt int32) {
 	if wt == PT_VarInt {
 		save_field_desc(idx, PT_VarInt, allBuffs)
@@ -347,6 +356,33 @@ func save_protobuf_string(idx int32, va []byte, allBuffs *bytes.Buffer) {
 	binary.Write(newBuff, binary.LittleEndian, &eos)
 	save_protobuf_lenth_delimited(idx, newBuff.Bytes(), allBuffs)
 	fmt.Println(allBuffs.Bytes())
+}
+
+func save_protobuf_slice(idx int32, v interface{}, allBuffs *bytes.Buffer) {
+	newBuff := bytes.NewBuffer([]byte{})
+	va := reflect.ValueOf(v)
+	len := int32(va.Len())
+	binary.Write(newBuff, binary.LittleEndian, &len)
+	var rtype reflect.Type
+	if len > 0 {		
+		for i := int32(0); i < len; i++ {
+			va1 := va.Index(int(i))
+			if !va1.CanInterface() {
+				va1 = va1.Elem()
+			}
+			va2 := va1.Interface()
+			rtype = reflect.TypeOf(va2)
+
+			if( i == 0){
+				save_type(rtype.Kind(),newBuff)
+			}
+
+			encode_value_to_buf(-1,va2,newBuff)
+		}
+		fmt.Println("newBuff:", newBuff.Bytes())
+		save_protobuf_lenth_delimited(idx,newBuff.Bytes(),allBuffs)
+		fmt.Println("allBuffs:", allBuffs.Bytes())
+	}
 }
 
 func save_protobuf_struct(idx int32, v interface{}, allBuffs *bytes.Buffer) {
